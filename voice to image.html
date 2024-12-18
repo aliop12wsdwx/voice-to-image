@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تبدیل صدا به تصویر</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f3f3f3;
+            color: #333;
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+        button {
+            background-color: #333;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #555;
+        }
+        img {
+            margin-top: 20px;
+            max-width: 100%;
+            max-height: 300px;
+            border: 2px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <h1>تبدیل گفتار به تصویر</h1>
+    <p>روی دکمه زیر کلیک کنید و صحبت کنید تا تصویر مورد نظر تولید شود.</p>
+    <button id="voiceButton">🎤 ضبط صدا</button>
+    <img id="generatedImage" alt="تصویر تولید شده اینجا نمایش داده می‌شود" style="display: none;">
+    
+    <script>
+        const apiKey = "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"; // کلید API شما
+        const imageUrl = "https://api.openai.com/v1/images/generations"; // لینک API
+
+        const voiceButton = document.getElementById('voiceButton');
+        const generatedImage = document.getElementById('generatedImage');
+
+        // ضبط صدا
+        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.lang = 'fa-IR'; // زبان فارسی
+        recognition.interimResults = false;
+
+        voiceButton.addEventListener('click', () => {
+            voiceButton.textContent = 'در حال گوش دادن... 🎤';
+            recognition.start();
+        });
+
+        recognition.onresult = async (event) => {
+            const userSpeech = event.results[0][0].transcript;
+            voiceButton.textContent = '🎤 ضبط صدا';
+            alert(`شما گفتید: "${userSpeech}"`);
+
+            // ارسال متن به API
+            try {
+                const response = await fetch(imageUrl, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify({
+                        prompt: userSpeech,
+                        n: 1,
+                        size: "512x512"
+                    })
+                });
+
+                const data = await response.json();
+                if (data && data.data && data.data[0] && data.data[0].url) {
+                    generatedImage.src = data.data[0].url;
+                    generatedImage.style.display = "block";
+                } else {
+                    alert("مشکلی در دریافت تصویر پیش آمده است.");
+                }
+            } catch (error) {
+                alert("خطا در اتصال به API: " + error.message);
+            }
+        };
+
+        recognition.onerror = (event) => {
+            alert('مشکلی در ضبط صدا پیش آمد: ' + event.error);
+            voiceButton.textContent = '🎤 ضبط صدا';
+        };
+    </script>
+</body>
+</html>
